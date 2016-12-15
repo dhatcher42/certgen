@@ -43,7 +43,7 @@ rm -f /home/vagrant/scriptcerts/*
 # generate root cert
 
 openssl req -x509 -newkey rsa:2048 -keyout /home/vagrant/scriptcerts/root.key -out /home/vagrant/scriptcerts/root.crt -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=root/CN=root"
-
+cat /home/vagrant/scriptcerts/root.crt > /home/vagrant/scriptcerts/ca.pem
 
 # enter intermediate block
 
@@ -52,6 +52,9 @@ until [[ $COUNTER -eq $INTERMEDIATE ]]
 do
 	let COUNTER+=1
 
+	# create extensions to sign as CA
+	echo "basicConstraints = CA:TRUE" > /home/vagrant/scriptcerts/extensions.txt
+	
 	# generate cert
 	openssl req -new -newkey rsa:2048 -keyout /home/vagrant/scriptcerts/intermediate$COUNTER.key -out /home/vagrant/scriptcerts/intermediate$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=intermediate/CN=localhost.localdomain"
 
@@ -59,15 +62,18 @@ do
 	if [[ $COUNTER -eq 1 ]]
 	then
 		# sign first intermediate against the root
-		openssl x509 -req -in /home/vagrant/scriptcerts/intermediate$COUNTER.csr -CA /home/vagrant/scriptcerts/root.crt -CAkey /home/vagrant/scriptcerts/root.key -CAcreateserial -out /home/vagrant/scriptcerts/intermediate$COUNTER.crt
+		openssl x509 -req -extfile /home/vagrant/scriptcerts/extensions.txt -in /home/vagrant/scriptcerts/intermediate$COUNTER.csr -CA /home/vagrant/scriptcerts/root.crt -CAkey /home/vagrant/scriptcerts/root.key -CAcreateserial -out /home/vagrant/scriptcerts/intermediate$COUNTER.crt
 
 	else
 		# sign following intermediates against preceeding one
-		openssl x509 -req -in /home/vagrant/scriptcerts/intermediate$COUNTER.csr -CA /home/vagrant/scriptcerts/intermediate$[COUNTER-1].crt -CAkey /home/vagrant/scriptcerts/intermediate$[COUNTER-1].key -CAcreateserial -out /home/vagrant/scriptcerts/intermediate$COUNTER.crt
+		openssl x509 -req -extfile /home/vagrant/scriptcerts/extensions.txt -in /home/vagrant/scriptcerts/intermediate$COUNTER.csr -CA /home/vagrant/scriptcerts/intermediate$[COUNTER-1].crt -CAkey /home/vagrant/scriptcerts/intermediate$[COUNTER-1].key -CAcreateserial -out /home/vagrant/scriptcerts/intermediate$COUNTER.crt
 	fi
 
 	# generate PEM
 	cat /home/vagrant/scriptcerts/intermediate$COUNTER.crt /home/vagrant/scriptcerts/intermediate$COUNTER.key > /home/vagrant/scriptcerts/intermediate$COUNTER.pem 
+	
+	# add to CA bundle
+	cat /home/vagrant/scriptcerts/ca.pem /home/vagrant/scriptcerts/intermediate$COUNTER.crt >> /home/vagrant/scriptcerts/ca.pem
 done 
 
 
