@@ -5,7 +5,9 @@
 MEMBERS=1
 CLIENTS=1
 INTERMEDIATE=0
+PTH=~/scriptcerts
 
+DELETE=1
 # grab arguments
 
 while [[ $# -gt 1 ]]
@@ -24,6 +26,12 @@ case $key in
 	-i|--intermediate)
 	INTERMEDIATE="$2"
 	;;
+	-p|--path)
+	PTH="$2"
+	;;
+	--nodelete)
+	DELETE=0
+	;;
 	*)
 		# unknown options
 	;;
@@ -31,19 +39,25 @@ esac
 shift # past argument or value
 done
 
-if [[ -n $1 ]]; then
+if [[ -n $1 ]]
+then
 	echo "Last line of file specified as non-opt/last argument:"
 	tail -1 $1
 fi
 
 # delete old certs
+if [[ $DELETE = 1 ]]
+then
+	rm -rf $PTH
+fi
 
-rm -f /home/vagrant/scriptcerts/*
+# create folder
+mkdir $PTH 
 
 # generate root cert
 
-openssl req -x509 -newkey rsa:2048 -keyout /home/vagrant/scriptcerts/root.key -out /home/vagrant/scriptcerts/root.crt -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=root/CN=root"
-cat /home/vagrant/scriptcerts/root.crt > /home/vagrant/scriptcerts/ca.pem
+openssl req -x509 -newkey rsa:2048 -keyout $PTH/root.key -out $PTH/root.crt -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=root/CN=root"
+cat $PTH/root.crt > $PTH/ca.pem
 
 # enter intermediate block
 
@@ -53,27 +67,27 @@ do
 	let COUNTER+=1
 
 	# create extensions to sign as CA
-	echo "basicConstraints = CA:TRUE" > /home/vagrant/scriptcerts/extensions.txt
+	echo "basicConstraints = CA:TRUE" > $PTH/extensions.txt
 	
 	# generate cert
-	openssl req -new -newkey rsa:2048 -keyout /home/vagrant/scriptcerts/intermediate$COUNTER.key -out /home/vagrant/scriptcerts/intermediate$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=intermediate/CN=localhost.localdomain"
+	openssl req -new -newkey rsa:2048 -keyout $PTH/intermediate$COUNTER.key -out $PTH/intermediate$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=intermediate/CN=localhost.localdomain"
 
 	# if 
 	if [[ $COUNTER -eq 1 ]]
 	then
 		# sign first intermediate against the root
-		openssl x509 -req -extfile /home/vagrant/scriptcerts/extensions.txt -in /home/vagrant/scriptcerts/intermediate$COUNTER.csr -CA /home/vagrant/scriptcerts/root.crt -CAkey /home/vagrant/scriptcerts/root.key -CAcreateserial -out /home/vagrant/scriptcerts/intermediate$COUNTER.crt
+		openssl x509 -req -extfile $PTH/extensions.txt -in $PTH/intermediate$COUNTER.csr -CA $PTH/root.crt -CAkey $PTH/root.key -CAcreateserial -out $PTH/intermediate$COUNTER.crt
 
 	else
 		# sign following intermediates against preceeding one
-		openssl x509 -req -extfile /home/vagrant/scriptcerts/extensions.txt -in /home/vagrant/scriptcerts/intermediate$COUNTER.csr -CA /home/vagrant/scriptcerts/intermediate$[COUNTER-1].crt -CAkey /home/vagrant/scriptcerts/intermediate$[COUNTER-1].key -CAcreateserial -out /home/vagrant/scriptcerts/intermediate$COUNTER.crt
+		openssl x509 -req -extfile $PTH/extensions.txt -in $PTH/intermediate$COUNTER.csr -CA $PTH/intermediate$[COUNTER-1].crt -CAkey $PTH/intermediate$[COUNTER-1].key -CAcreateserial -out $PTH/intermediate$COUNTER.crt
 	fi
 
 	# generate PEM
-	cat /home/vagrant/scriptcerts/intermediate$COUNTER.crt /home/vagrant/scriptcerts/intermediate$COUNTER.key > /home/vagrant/scriptcerts/intermediate$COUNTER.pem 
+	cat $PTH/intermediate$COUNTER.crt $PTH/intermediate$COUNTER.key > $PTH/intermediate$COUNTER.pem 
 	
 	# add to CA bundle
-	cat /home/vagrant/scriptcerts/ca.pem /home/vagrant/scriptcerts/intermediate$COUNTER.crt >> /home/vagrant/scriptcerts/ca.pem
+	cat $PTH/ca.pem $PTH/intermediate$COUNTER.crt >> $PTH/ca.pem
 done 
 
 
@@ -85,23 +99,23 @@ do
 	let COUNTER+=1
 
 	# generate cert
-	openssl req -new -newkey rsa:2048 -keyout /home/vagrant/scriptcerts/member$COUNTER.key -out /home/vagrant/scriptcerts/member$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=member/CN=localhost.localdomain"
+	openssl req -new -newkey rsa:2048 -keyout $PTH/member$COUNTER.key -out $PTH/member$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=member/CN=localhost.localdomain"
 
 	# check whether there are intermediate certs
 	# if not, sign against root
 	if [[ $INTERMEDIATE -eq 0 ]]
 	then
 		# sign cert
-		openssl x509 -req -in /home/vagrant/scriptcerts/member$COUNTER.csr -CA /home/vagrant/scriptcerts/root.crt -CAkey /home/vagrant/scriptcerts/root.key -CAcreateserial -out /home/vagrant/scriptcerts/member$COUNTER.crt
+		openssl x509 -req -in $PTH/member$COUNTER.csr -CA $PTH/root.crt -CAkey $PTH/root.key -CAcreateserial -out $PTH/member$COUNTER.crt
 
 	# if yes, sign against last intermediate
 	else
 		# sign cert
-		openssl x509 -req -in /home/vagrant/scriptcerts/member$COUNTER.csr -CA /home/vagrant/scriptcerts/intermediate$INTERMEDIATE.crt -CAkey /home/vagrant/scriptcerts/intermediate$INTERMEDIATE.key -CAcreateserial -out /home/vagrant/scriptcerts/member$COUNTER.crt
+		openssl x509 -req -in $PTH/member$COUNTER.csr -CA $PTH/intermediate$INTERMEDIATE.crt -CAkey $PTH/intermediate$INTERMEDIATE.key -CAcreateserial -out $PTH/member$COUNTER.crt
 	fi
 
 		# generate PEM
-		cat /home/vagrant/scriptcerts/member$COUNTER.crt /home/vagrant/scriptcerts/member$COUNTER.key > /home/vagrant/scriptcerts/member$COUNTER.pem
+		cat $PTH/member$COUNTER.crt $PTH/member$COUNTER.key > $PTH/member$COUNTER.pem
 done
 
 
@@ -113,21 +127,21 @@ do
 	let COUNTER+=1
 
 	# generate cert
-	openssl req -new -newkey rsa:2048 -keyout /home/vagrant/scriptcerts/client$COUNTER.key -out /home/vagrant/scriptcerts/client$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=client/CN=localhost.localdomain"
+	openssl req -new -newkey rsa:2048 -keyout $PTH/client$COUNTER.key -out $PTH/client$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=client/CN=localhost.localdomain"
 
 	# check whether there are intermediate certs
 	# if not, sign against root
 	if [[ $INTERMEDIATE -eq 0 ]]
 	then
 		# sign cert
-		openssl x509 -req -in /home/vagrant/scriptcerts/client$COUNTER.csr -CA /home/vagrant/scriptcerts/root.crt -CAkey /home/vagrant/scriptcerts/root.key -CAcreateserial -out /home/vagrant/scriptcerts/client$COUNTER.crt
+		openssl x509 -req -in $PTH/client$COUNTER.csr -CA $PTH/root.crt -CAkey $PTH/root.key -CAcreateserial -out $PTH/client$COUNTER.crt
 
 	# if yes, sign against last intermediate
 	else
 		# sign cert
-		openssl x509 -req -in /home/vagrant/scriptcerts/client$COUNTER.csr -CA /home/vagrant/scriptcerts/intermediate$INTERMEDIATE.crt -CAkey /home/vagrant/scriptcerts/intermediate$INTERMEDIATE.key -CAcreateserial -out /home/vagrant/scriptcerts/client$COUNTER.crt
+		openssl x509 -req -in $PTH/client$COUNTER.csr -CA $PTH/intermediate$INTERMEDIATE.crt -CAkey $PTH/intermediate$INTERMEDIATE.key -CAcreateserial -out $PTH/client$COUNTER.crt
 	fi
 
 	# generate PEM
-	cat /home/vagrant/scriptcerts/client$COUNTER.crt /home/vagrant/scriptcerts/client$COUNTER.key > /home/vagrant/scriptcerts/client$COUNTER.pem 
+	cat $PTH/client$COUNTER.crt $PTH/client$COUNTER.key > $PTH/client$COUNTER.pem 
 done 
