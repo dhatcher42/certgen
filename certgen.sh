@@ -11,13 +11,14 @@ HELP=0
 DELETE=1
 # grab arguments
 
-while [[ $# -gt 1 ]]
+while [[ $# -gt 0 ]]
 do
 key="$1"
 
 case $key in
 	-h|--help)
 	HELP=1
+	shift
 	;;
 	-m|--members)
 	MEMBERS="$2"
@@ -29,12 +30,15 @@ case $key in
 	;;
 	-i|--intermediate)
 	INTERMEDIATE="$2"
+	shift
 	;;
 	-p|--path)
 	PTH="$2"
+	shift
 	;;
 	--nodelete)
 	DELETE=0
+	shift
 	;;
 	*)
 		# unknown options
