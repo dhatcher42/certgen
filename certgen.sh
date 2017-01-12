@@ -7,6 +7,7 @@ CLIENTS=1
 INTERMEDIATE=0
 PTH=~/scriptcerts
 
+HELP=0
 DELETE=1
 # grab arguments
 
@@ -15,6 +16,9 @@ do
 key="$1"
 
 case $key in
+	-h|--help)
+	HELP=1
+	;;
 	-m|--members)
 	MEMBERS="$2"
 	shift # past argument
@@ -44,6 +48,21 @@ then
 	echo "Last line of file specified as non-opt/last argument:"
 	tail -1 $1
 fi
+
+# display help, otherwise generate certs
+if [[ $HELP = 1 ]]
+then
+	echo "Usage: $0 [option...] {help|members|clients|intermediate|path|nodelete}"
+	echo
+	echo "	-h, --help 		Displays help and exits"
+	echo "	-m, --members		Specify number of member certs"
+	echo "	-c, --clients		Specify number of client certs"
+	echo "	-i, --intermediate	Specify number of intermediate certs"
+	echo "	-p, --path		Specify output path of generated certs"
+	echo "	--nodelete		Do not delete existing certs in Path"
+	exit 0
+
+else
 
 # delete old certs
 if [[ $DELETE = 1 ]]
@@ -145,3 +164,4 @@ do
 	# generate PEM
 	cat $PTH/client$COUNTER.crt $PTH/client$COUNTER.key > $PTH/client$COUNTER.pem 
 done 
+fi
