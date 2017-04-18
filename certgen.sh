@@ -7,6 +7,7 @@ CLIENTS=1
 INTERMEDIATE=0
 PTH=~/scriptcerts
 
+VERBOSE=0
 HELP=0
 DELETE=1
 # grab arguments
@@ -40,6 +41,10 @@ case $key in
 	DELETE=0
 	shift
 	;;
+	-v|--verbose)
+	VERBOSE=1
+	shift
+	;;
 	*)
 		# unknown options
 	;;
@@ -64,9 +69,16 @@ then
 	echo "	-i, --intermediate	Specify number of intermediate certs"
 	echo "	-p, --path		Specify output path of generated certs"
 	echo "	--nodelete		Do not delete existing certs in Path"
+	echo "	-v, --verbose		Display all output"
 	exit 0
 
 else
+
+# wipe all output unless verbose
+if [[ $VERBOSE = 0 ]]
+then
+	exec &>/dev/null
+fi
 
 # delete old certs
 if [[ $DELETE = 1 ]]
@@ -168,4 +180,5 @@ do
 	# generate PEM
 	cat $PTH/client$COUNTER.crt $PTH/client$COUNTER.key > $PTH/client$COUNTER.pem 
 done 
+
 fi
