@@ -58,7 +58,7 @@ then
 	tail -1 $1
 fi
 
-# display help, otherwise generate certs
+# display help and exit
 if [[ $HELP = 1 ]]
 then
 	echo "Usage: $0 [option...] {help|members|clients|intermediate|path|nodelete}"
