@@ -6,10 +6,11 @@ MEMBERS=1
 CLIENTS=1
 INTERMEDIATE=0
 PTH=~/scriptcerts
-
+HOSTNAME=`hostname -f`
 VERBOSE=0
 HELP=0
 DELETE=1
+
 # grab arguments
 
 while [[ $# -gt 0 ]]
@@ -105,7 +106,7 @@ do
 	echo "basicConstraints = CA:TRUE" > $PTH/extensions.txt
 	
 	# generate cert
-	openssl req -new -newkey rsa:2048 -keyout $PTH/intermediate$COUNTER.key -out $PTH/intermediate$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=intermediate/CN=localhost.localdomain"
+	openssl req -new -newkey rsa:2048 -keyout $PTH/intermediate$COUNTER.key -out $PTH/intermediate$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=intermediate/CN=$HOSTNAME"
 
 	# if 
 	if [[ $COUNTER -eq 1 ]]
@@ -134,7 +135,7 @@ do
 	let COUNTER+=1
 
 	# generate cert
-	openssl req -new -newkey rsa:2048 -keyout $PTH/member$COUNTER.key -out $PTH/member$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=member/CN=localhost.localdomain"
+	openssl req -new -newkey rsa:2048 -keyout $PTH/member$COUNTER.key -out $PTH/member$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=member/CN=$HOSTNAME"
 
 	# check whether there are intermediate certs
 	# if not, sign against root
@@ -162,7 +163,7 @@ do
 	let COUNTER+=1
 
 	# generate cert
-	openssl req -new -newkey rsa:2048 -keyout $PTH/client$COUNTER.key -out $PTH/client$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=client/CN=localhost.localdomain"
+	openssl req -new -newkey rsa:2048 -keyout $PTH/client$COUNTER.key -out $PTH/client$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=client/CN=$HOSTNAME"
 
 	# check whether there are intermediate certs
 	# if not, sign against root
