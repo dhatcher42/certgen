@@ -6,6 +6,9 @@ This is a little hacky script I've done in order to easily generate certs for a 
 Arguments
 --------
 
+`-h` | `--help`
+* Displays help then exits
+ 
 `-c` | `--clients`
 * Specify # of client certs
 * Default: 1
