@@ -106,7 +106,7 @@ do
 	echo "basicConstraints = CA:TRUE" > $PTH/extensions.txt
 	
 	# generate cert
-	openssl req -new -newkey rsa:2048 -keyout $PTH/intermediate$COUNTER.key -out $PTH/intermediate$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=intermediate/CN=$HOSTNAME"
+	openssl req -new -newkey rsa:2048 -keyout $PTH/intermediate$COUNTER.key -out $PTH/intermediate$COUNTER.csr -nodes -subj "/C=US/ST=NewYork/L=NYC/O=MongoDB/OU=intermediate$COUNTER/CN=$HOSTNAME"
 
 	# if 
 	if [[ $COUNTER -eq 1 ]]
