@@ -123,7 +123,7 @@ do
 	cat $PTH/intermediate$COUNTER.crt $PTH/intermediate$COUNTER.key > $PTH/intermediate$COUNTER.pem 
 	
 	# add to CA bundle
-	cat $PTH/ca.pem $PTH/intermediate$COUNTER.crt >> $PTH/ca.pem
+	cat $PTH/intermediate$COUNTER.crt >> $PTH/ca.pem
 done 
 
 
